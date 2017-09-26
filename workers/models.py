@@ -45,3 +45,4 @@ class User(models.Model):
     signature = models.TextField(max_length=50)
     verifyCode = models.TextField(default='maimengmanhua', max_length=20)
     lastTime = models.DateTimeField(auto_now_add=1)
+    isRegister = models.IntegerField(default=0)
