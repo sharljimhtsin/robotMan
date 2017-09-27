@@ -12,6 +12,8 @@ def index(request):
     print(data[0].__dict__)
     data = {'a': 'bbbb'}
     print(data)
+    resp = doRequest({}, "baidu.com:80", "/aaa", 'POST', {})
+    print(resp)
     resp = "".join(m.__str__() for m in data)
     return HttpResponse("hello world" + resp)
 
@@ -20,11 +22,11 @@ def doTest(request):
     return HttpResponse('hahahah')
 
 
-HOST = 'http://api-test.maimengjun.com/'
-POST_URL = 'posts/publish'
-COMMENT_URL = 'comment/commentPost'
-LOGIN_URL = 'login'
-REG_URL = 'register'
+HOST = 'api-test.maimengjun.com:80'
+POST_URL = '/posts/publish'
+COMMENT_URL = '/comment/commentPost'
+LOGIN_URL = '/login'
+REG_URL = '/register'
 
 
 def doRequest(postData, hostName, subUrl, method, header=None):
