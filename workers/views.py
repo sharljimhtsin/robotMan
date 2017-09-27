@@ -84,12 +84,10 @@ def saveJob(rawData, isTopic, element, user):
     objData = eval(rawData)
     typeValue = 1 if isTopic else 0
     idValue = element.id
-    idInServer = objData['']
+    idInServer = objData['data']['id']
     fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
                       idInServer=idInServer)
     fw.save()
-    element.lastTime = datetime.now()
-    element.save()
     return True
 
 
@@ -143,7 +141,7 @@ def checkTopicOrNot(clubId):
     ).filter(
         clubId__exact=clubId
     )
-    return random.random() < 0.3 and topicSentList.count() != 0, topicSentList
+    return random.random() < 0.5 or topicSentList.count() == 0, topicSentList
 
 
 def pickElement(isTopic, clubId):
