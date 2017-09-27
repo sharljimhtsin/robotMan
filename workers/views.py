@@ -71,9 +71,9 @@ def sendTopic(topic, headerData):
     return rawData
 
 
-def sendComment(comment, headerData):
+def sendComment(comment, headerData, followerId):
     postData = comment.__dict__
-    postData['postsId'] = 1
+    postData['postsId'] = followerId
     rawData = doRequest(postData, HOST, COMMENT_URL, 'POST', headerData)
     comment.lastTime = datetime.now()
     comment.save()
@@ -82,7 +82,7 @@ def sendComment(comment, headerData):
 
 def saveJob(rawData, isTopic, element, user):
     objData = eval(rawData)
-    typeValue = 0 if isTopic else 1
+    typeValue = 1 if isTopic else 0
     idValue = element.id
     idInServer = objData['']
     fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
@@ -143,8 +143,7 @@ def checkTopicOrNot(clubId):
     ).filter(
         clubId__exact=clubId
     )
-    random.shuffle(topicSentList)
-    return random.random() > 0.3 or topicSentList.count() == 0, topicSentList
+    return random.random() < 0.3 and topicSentList.count() != 0, topicSentList
 
 
 def pickElement(isTopic, clubId):
@@ -191,8 +190,10 @@ def start(request):
     else:
         for i in range(0, COMMENT_RATE):
             # prepare the fake data
+            random.shuffle(mainList)
+            postId = mainList[0]['idInServer']
             element = pickElement(isTopic, clubId)
-            rawData = sendComment(element, HEADER_DATA)
+            rawData = sendComment(element, HEADER_DATA, postId)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
             else:
