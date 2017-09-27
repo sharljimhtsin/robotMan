@@ -91,12 +91,14 @@ def saveJob(rawData, isTopic, element, user):
     return True
 
 
+def randomBool():
+    return random.random() < 0.5
+
+
 def pickUser():
-    sex = 1
-    userList = User.objects.filter(
-        lastTime__gte=date.today()
-    ).filter(
-        lastTime__lte=date.today() + timedelta(days=1)
+    sex = 1 if randomBool() else 0
+    userList = User.objects.exclude(
+        Q(lastTime__gte=date.today()), Q(lastTime__lte=date.today() + timedelta(days=1))
     ).filter(
         sex__exact=sex
     )
@@ -141,7 +143,7 @@ def checkTopicOrNot(clubId):
     ).filter(
         clubId__exact=clubId
     )
-    return random.random() < 0.5 or topicSentList.count() == 0, topicSentList
+    return randomBool() or topicSentList.count() == 0, topicSentList
 
 
 def pickElement(isTopic, clubId):
