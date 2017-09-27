@@ -36,6 +36,9 @@ POST_URL = '/posts/publish'
 COMMENT_URL = '/comment/commentPost'
 LOGIN_URL = '/login'
 REG_URL = '/register'
+TOPIC_RATE = 1
+COMMENT_RATE = 2
+HEADER_DATA = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest', 'devicetype': '3'}
 
 
 def doRequest(postData, hostName, subUrl, method, header=None):
@@ -60,15 +63,38 @@ def isOK(body):
         return False
 
 
-# trigger start here
-def start(request):
-    post = request.POST
-    clubId = post.get('id')
-    if clubId is None or not clubId.isdigit():
-        return HttpResponse('ERROR')
-    # prepare the user data
+def sendTopic(topic, headerData):
+    postData = model_to_dict(topic)
+    rawData = doRequest(postData, HOST, POST_URL, 'POST', headerData)
+    topic.lastTime = datetime.now()
+    topic.save()
+    return rawData
+
+
+def sendComment(comment, headerData):
+    postData = comment.__dict__
+    postData['postsId'] = 1
+    rawData = doRequest(postData, HOST, COMMENT_URL, 'POST', headerData)
+    comment.lastTime = datetime.now()
+    comment.save()
+    return rawData
+
+
+def saveJob(rawData, isTopic, element, user):
+    objData = eval(rawData)
+    typeValue = 0 if isTopic else 1
+    idValue = element.id
+    idInServer = objData['']
+    fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
+                      idInServer=idInServer)
+    fw.save()
+    element.lastTime = datetime.now()
+    element.save()
+    return True
+
+
+def pickUser():
     sex = 1
-    headerData = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest', 'devicetype': '3'}
     userList = User.objects.filter(
         lastTime__gte=date.today()
     ).filter(
@@ -78,22 +104,36 @@ def start(request):
     )
     random.shuffle(userList)
     user = userList[0]
+    return user
+
+
+def getToken(user):
     if user.isRegister == 0:
         postData = {}
-        jsonData = doRequest(postData, HOST, REG_URL, 'POST', headerData)
-        token = jsonData
-        user.isRegister = 1
-        jsonData['accesstoken'] = token
+        jsonData = doRequest(postData, HOST, REG_URL, 'POST', HEADER_DATA)
+        if isOK(jsonData):
+            token = jsonData
+            HEADER_DATA['accesstoken'] = token
+            user.isRegister = 1
+            user.lastTime = datetime.now()
+            user.save()
+            return True
+        else:
+            return False
     else:
         postData = {}
-        headerData = {}
-        jsonData = doRequest(postData, HOST, LOGIN_URL, 'POST', headerData)
-        token = jsonData
-        jsonData['accesstoken'] = token
+        jsonData = doRequest(postData, HOST, LOGIN_URL, 'POST', HEADER_DATA)
+        if isOK(jsonData):
+            token = jsonData
+            HEADER_DATA['accesstoken'] = token
+            user.lastTime = datetime.now()
+            user.save()
+            return True
+        else:
+            return False
 
-    user.lastTime = datetime.now()
-    user.save()
-    # prepare the fake data
+
+def checkTopicOrNot(clubId):
     topicSentList = FinishedWork.objects.filter(
         theTime__gte=date.today() - timedelta(days=10)
     ).filter(
@@ -103,10 +143,11 @@ def start(request):
     ).filter(
         clubId__exact=clubId
     )
-    # create new topic or give a comment
-    isTopic = 1 or topicSentList.count() == 0
-    topic = None
-    comment = None
+    random.shuffle(topicSentList)
+    return random.random() > 0.3 or topicSentList.count() == 0, topicSentList
+
+
+def pickElement(isTopic, clubId):
     if isTopic:
         topicList = Topic.objects.exclude(
             Q(lastTime__gte=date.today()), Q(lastTime__lte=date.today() + timedelta(days=1))
@@ -114,33 +155,47 @@ def start(request):
             clubId__exact=clubId
         )
         random.shuffle(topicList)
-        topic = topicList[0]
+        return topicList[0]
     else:
         commentList = Comment.objects.raw(
             'select b.* from workers_topic as a LEFT JOIN workers_comment as b on a.id = b.postsId_id WHERE a.clubId = %s and b.lastTime not between %s and %s',
             [clubId, date.today(), date.today() + timedelta(days=1)])
         random.shuffle(commentList)
-        comment = commentList[0]
+        return commentList[0]
+
+
+# trigger start here
+def start(request):
+    post = request.POST
+    clubId = post.get('id')
+    # check parameter
+    if clubId is None or not clubId.isdigit():
+        return HttpResponse('ERROR')
+    # prepare the user data
+    user = pickUser()
+    if getToken(user) is False:
+        return HttpResponse("ERROR")
+
+    # create new topic or give a comment
+    isTopic, mainList = checkTopicOrNot(clubId)
     # do the post
-    url = POST_URL if isTopic else COMMENT_URL
-    rawData = None
     if isTopic:
-        postData = model_to_dict(topic)
-        rawData = doRequest(postData, HOST, url, 'POST', headerData)
-        topic.lastTime = datetime.now()
-        topic.save()
+        for i in range(0, TOPIC_RATE):
+            # prepare the fake data
+            element = pickElement(isTopic, clubId)
+            rawData = sendTopic(element, HEADER_DATA)
+            if isOK(rawData):
+                saveJob(rawData, isTopic, element, user)
+            else:
+                return HttpResponse('ERROR')
     else:
-        postData = comment.__dict__
-        rawData = doRequest(postData, HOST, url, 'POST', headerData)
-        comment.lastTime = datetime.now()
-        comment.save()
-    if isOK(rawData):
-        objData = eval(rawData)
-        typeValue = 0 if isTopic else 1
-        idValue = topic.id if isTopic else comment.id
-        fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
-                          idInServer=objData[''])
-        fw.save()
-    else:
-        return HttpResponse('FAIL')
+        for i in range(0, COMMENT_RATE):
+            # prepare the fake data
+            element = pickElement(isTopic, clubId)
+            rawData = sendComment(element, HEADER_DATA)
+            if isOK(rawData):
+                saveJob(rawData, isTopic, element, user)
+            else:
+                return HttpResponse('ERROR')
+
     return HttpResponse('OK')
