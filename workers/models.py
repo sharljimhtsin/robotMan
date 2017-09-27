@@ -5,9 +5,6 @@ class TestModel(models.Model):
     username = models.CharField(max_length=20)
     age = models.IntegerField(default=1)
 
-    def __str__(self):
-        return self.username
-
 
 class Topic(models.Model):
     id = models.IntegerField(primary_key=1)
@@ -37,7 +34,7 @@ class FinishedWork(models.Model):
 class User(models.Model):
     id = models.IntegerField(primary_key=1)
     username = models.TextField(max_length=10)
-    password = models.TextField(max_length=20)
+    password = models.TextField(max_length=100)
     nickname = models.TextField(max_length=10)
     avatar = models.TextField(max_length=20)
     birthday = models.DateTimeField()

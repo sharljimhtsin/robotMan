@@ -2,11 +2,15 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from workers.models import TestModel, Topic, Comment, User, FinishedWork
 from datetime import datetime, timedelta, time, date
+from django.forms.models import model_to_dict
 
 
 def index(request):
     print(request.GET)
     data = TestModel.objects.all()
+    print(model_to_dict(data[0]))
+    print(data[0].__dict__)
+    data = {'a': 'bbbb'}
     print(data)
     resp = "".join(m.__str__() for m in data)
     return HttpResponse("hello world" + resp)
@@ -96,9 +100,13 @@ def start(request):
     # do the post
     url = POST_URL if isTopic else COMMENT_URL
     if isTopic:
-        postData = {}
-        doRequest("", HOST, url, 'POST', headerData)
-    else:
-        postData = {}
+        postData = model_to_dict(topic)
         doRequest(postData, HOST, url, 'POST', headerData)
+        topic.lastTime = datetime.now()
+        topic.save()
+    else:
+        postData = model_to_dict(comment)
+        doRequest(postData, HOST, url, 'POST', headerData)
+        comment.lastTime = datetime.now()
+        comment.save()
     return HttpResponse('OK')
