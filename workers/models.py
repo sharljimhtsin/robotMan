@@ -17,7 +17,7 @@ class Topic(models.Model):
 
 class Comment(models.Model):
     id = models.IntegerField(primary_key=1)
-    postsId = models.ForeignKey(Topic, to_field='id')
+    postsId = models.ForeignKey(Topic)
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200)
     lastTime = models.DateTimeField(auto_now_add=1)
@@ -29,6 +29,7 @@ class FinishedWork(models.Model):
     contentId = models.IntegerField(default=0)
     userId = models.IntegerField(default=0)
     theTime = models.DateTimeField(auto_now_add=1)
+    idInServer = models.IntegerField(default=0)
 
 
 class User(models.Model):

@@ -3,6 +3,9 @@ from django.http import HttpResponse
 from workers.models import TestModel, Topic, Comment, User, FinishedWork
 from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
+from django.db.models import Q
+import http.client, urllib.parse
+import random
 
 
 def index(request):
@@ -15,6 +18,12 @@ def index(request):
     resp = doRequest({}, "baidu.com:80", "/aaa", 'POST', {})
     print(resp)
     resp = "".join(m.__str__() for m in data)
+    tmp = Comment.objects.raw(
+        'select a.* from workers_comment as a LEFT JOIN workers_topic as b on a.postsId_id = b.title WHERE b.id = %s or b.id = %s',
+        [5, 1])
+    print(tmp.__dict__)
+    for row in tmp:
+        print(row.__dict__)
     return HttpResponse("hello world" + resp)
 
 
@@ -30,7 +39,6 @@ REG_URL = '/register'
 
 
 def doRequest(postData, hostName, subUrl, method, header=None):
-    import http.client, urllib.parse
     params = urllib.parse.urlencode(postData)
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
     if header is not None:
@@ -61,13 +69,15 @@ def start(request):
     # prepare the user data
     sex = 1
     headerData = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest', 'devicetype': '3'}
-    user = User.objects.filter(
+    userList = User.objects.filter(
         lastTime__gte=date.today()
     ).filter(
         lastTime__lte=date.today() + timedelta(days=1)
     ).filter(
         sex__exact=sex
-    )[0]
+    )
+    random.shuffle(userList)
+    user = userList[0]
     if user.isRegister == 0:
         postData = {}
         jsonData = doRequest(postData, HOST, REG_URL, 'POST', headerData)
@@ -88,27 +98,29 @@ def start(request):
         theTime__gte=date.today() - timedelta(days=10)
     ).filter(
         theTime__lte=date.today()
+    ).filter(
+        type__exact=1
+    ).filter(
+        clubId__exact=clubId
     )
     # create new topic or give a comment
     isTopic = 1 or topicSentList.count() == 0
     topic = None
     comment = None
     if isTopic:
-        topic = Topic.objects.filter(
-            lastTime__gte=date.today()
-        ).filter(
-            lastTime__lte=date.today() + timedelta(days=1)
+        topicList = Topic.objects.exclude(
+            Q(lastTime__gte=date.today()), Q(lastTime__lte=date.today() + timedelta(days=1))
         ).filter(
             clubId__exact=clubId
-        )[0]
+        )
+        random.shuffle(topicList)
+        topic = topicList[0]
     else:
-        comment = Comment.objects.filter(
-            lastTime__gte=date.today()
-        ).filter(
-            lastTime__lte=date.today() + timedelta(days=1)
-        ).filter(
-            postsId__exact=1
-        )[0]
+        commentList = Comment.objects.raw(
+            'select b.* from workers_topic as a LEFT JOIN workers_comment as b on a.id = b.postsId_id WHERE a.clubId = %s and b.lastTime not between %s and %s',
+            [clubId, date.today(), date.today() + timedelta(days=1)])
+        random.shuffle(commentList)
+        comment = commentList[0]
     # do the post
     url = POST_URL if isTopic else COMMENT_URL
     rawData = None
@@ -118,14 +130,16 @@ def start(request):
         topic.lastTime = datetime.now()
         topic.save()
     else:
-        postData = model_to_dict(comment)
+        postData = comment.__dict__
         rawData = doRequest(postData, HOST, url, 'POST', headerData)
         comment.lastTime = datetime.now()
         comment.save()
     if isOK(rawData):
+        objData = eval(rawData)
         typeValue = 0 if isTopic else 1
         idValue = topic.id if isTopic else comment.id
-        fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now())
+        fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
+                          idInServer=objData[''])
         fw.save()
     else:
         return HttpResponse('FAIL')
