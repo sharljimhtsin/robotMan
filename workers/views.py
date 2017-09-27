@@ -33,6 +33,8 @@ def doRequest(postData, hostName, subUrl, method, header=None):
     import http.client, urllib.parse
     params = urllib.parse.urlencode(postData)
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
+    if header is not None:
+        headers.update(header)
     conn = http.client.HTTPConnection(hostName)
     conn.request(method, subUrl, params, headers)
     response = conn.getresponse()
@@ -40,6 +42,14 @@ def doRequest(postData, hostName, subUrl, method, header=None):
     data = response.read()
     conn.close()
     return data
+
+
+def isOK(body):
+    jsonObj = eval(body)
+    if jsonObj['code'] == 0:
+        return True
+    else:
+        return False
 
 
 # trigger start here
@@ -101,14 +111,22 @@ def start(request):
         )[0]
     # do the post
     url = POST_URL if isTopic else COMMENT_URL
+    rawData = None
     if isTopic:
         postData = model_to_dict(topic)
-        doRequest(postData, HOST, url, 'POST', headerData)
+        rawData = doRequest(postData, HOST, url, 'POST', headerData)
         topic.lastTime = datetime.now()
         topic.save()
     else:
         postData = model_to_dict(comment)
-        doRequest(postData, HOST, url, 'POST', headerData)
+        rawData = doRequest(postData, HOST, url, 'POST', headerData)
         comment.lastTime = datetime.now()
         comment.save()
+    if isOK(rawData):
+        typeValue = 0 if isTopic else 1
+        idValue = topic.id if isTopic else comment.id
+        fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now())
+        fw.save()
+    else:
+        return HttpResponse('FAIL')
     return HttpResponse('OK')
