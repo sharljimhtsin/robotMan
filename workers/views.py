@@ -49,8 +49,8 @@ def doRequest(postData, hostName, subUrl, method, header=None):
     conn = http.client.HTTPConnection(hostName)
     conn.request(method, subUrl, params, headers)
     response = conn.getresponse()
-    print(response.status, response.reason)
     data = response.read()
+    print(response.status, response.reason, data)
     conn.close()
     return data
 
@@ -103,16 +103,17 @@ def pickUser():
         sex__exact=sex
     )
     random.shuffle(userList)
+    print(userList, sex)
     user = userList[0]
     return user
 
 
 def getToken(user):
     if user.isRegister == 0:
-        postData = {}
+        postData = model_to_dict(user)
         jsonData = doRequest(postData, HOST, REG_URL, 'POST', HEADER_DATA)
         if isOK(jsonData):
-            token = jsonData
+            token = eval(jsonData)['data']['token']
             HEADER_DATA['accesstoken'] = token
             user.isRegister = 1
             user.lastTime = datetime.now()
@@ -121,10 +122,10 @@ def getToken(user):
         else:
             return False
     else:
-        postData = {}
+        postData = model_to_dict(user)
         jsonData = doRequest(postData, HOST, LOGIN_URL, 'POST', HEADER_DATA)
         if isOK(jsonData):
-            token = jsonData
+            token = eval(jsonData)['meta']['token']
             HEADER_DATA['accesstoken'] = token
             user.lastTime = datetime.now()
             user.save()
@@ -134,15 +135,9 @@ def getToken(user):
 
 
 def checkTopicOrNot(clubId):
-    topicSentList = FinishedWork.objects.filter(
-        theTime__gte=date.today() - timedelta(days=10)
-    ).filter(
-        theTime__lte=date.today()
-    ).filter(
-        type__exact=1
-    ).filter(
-        clubId__exact=clubId
-    )
+    topicSentList = FinishedWork.objects.raw(
+        'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND b.clubId = %s',
+        [date.today() - timedelta(days=10), date.today(), clubId])
     return randomBool() or topicSentList.count() == 0, topicSentList
 
 
@@ -157,7 +152,7 @@ def pickElement(isTopic, clubId):
         return topicList[0]
     else:
         commentList = Comment.objects.raw(
-            'select b.* from workers_topic as a LEFT JOIN workers_comment as b on a.id = b.postsId_id WHERE a.clubId = %s and b.lastTime not between %s and %s',
+            'select b.* from workers_topic AS a LEFT JOIN workers_comment AS b ON a.id = b.postsId_id WHERE a.clubId = %s AND b.lastTime NOT BETWEEN %s AND %s',
             [clubId, date.today(), date.today() + timedelta(days=1)])
         random.shuffle(commentList)
         return commentList[0]
@@ -177,6 +172,7 @@ def start(request):
 
     # create new topic or give a comment
     isTopic, mainList = checkTopicOrNot(clubId)
+    print(isTopic, mainList)
     # do the post
     if isTopic:
         for i in range(0, TOPIC_RATE):
