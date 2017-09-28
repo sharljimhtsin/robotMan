@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
 from django.db.models import Q
 import http.client, urllib.parse
-import random, copy
+import random, copy, time
 
 
 def index(request):
@@ -42,6 +42,7 @@ HEADER_DATA = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest',
 
 
 def doRequest(postData, hostName, subUrl, method, header=None):
+    time.sleep(3)  # sleep seconds for avoid server-side ban
     params = urllib.parse.urlencode(postData)
     headers = {"Content-type": "application/x-www-form-urlencoded", "Accept": "text/plain"}
     if header is not None:
