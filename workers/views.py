@@ -5,7 +5,7 @@ from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
 from django.db.models import Q
 import http.client, urllib.parse
-import random
+import random, copy
 
 
 def index(request):
@@ -73,19 +73,20 @@ def sendTopic(topic, headerData):
 
 
 def sendComment(comment, headerData, followerId):
-    postData = comment.__dict__
+    postData = copy.deepcopy(comment)
     postData['postsId'] = followerId
     postData.pop('id', None)
     rawData = doRequest(postData, HOST, COMMENT_URL, 'POST', headerData)
-    comment.lastTime = datetime.now()
-    comment.save()
+    updateObj = Comment.objects.get(pk=comment['id'])
+    updateObj.lastTime = datetime.now()
+    updateObj.save()
     return rawData
 
 
 def saveJob(rawData, isTopic, element, user):
     objData = eval(rawData)
     typeValue = 1 if isTopic else 0
-    idValue = element.id
+    idValue = element.id if isTopic else element['id']
     idInServer = objData['data']['id']
     fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
                       idInServer=idInServer)
@@ -139,8 +140,15 @@ def getToken(user):
 def checkTopicOrNot(clubId):
     topicSentList = FinishedWork.objects.raw(
         'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND b.clubId = %s',
-        [date.today() - timedelta(days=10), date.today(), clubId])
-    return randomBool() or len(list(topicSentList)) == 0, topicSentList
+        [date.today() - timedelta(days=10), date.today() + timedelta(days=1), clubId])
+    return randomBool() or len(list(topicSentList)) == 0, rawQuerySetToDict(topicSentList)
+
+
+def rawQuerySetToDict(rawData):
+    list = []
+    for row in rawData:
+        list.append(row.__dict__)
+    return list
 
 
 def pickElement(isTopic, clubId):
@@ -156,6 +164,7 @@ def pickElement(isTopic, clubId):
         commentList = Comment.objects.raw(
             'select b.* from workers_topic AS a LEFT JOIN workers_comment AS b ON a.id = b.postsId_id WHERE a.clubId = %s AND b.lastTime NOT BETWEEN %s AND %s',
             [clubId, date.today(), date.today() + timedelta(days=1)])
+        commentList = rawQuerySetToDict(commentList)
         random.shuffle(commentList)
         return commentList[0]
 
