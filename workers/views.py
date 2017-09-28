@@ -64,11 +64,12 @@ def isOK(body):
 
 
 def sendTopic(topic, headerData):
-    postData = model_to_dict(topic)
+    postData = copy.deepcopy(topic)
     postData.pop('id', None)
     rawData = doRequest(postData, HOST, POST_URL, 'POST', headerData)
-    topic.lastTime = datetime.now()
-    topic.save()
+    updateObj = Topic.objects.get(pk=topic['id'])
+    updateObj.lastTime = datetime.now()
+    updateObj.save()
     return rawData
 
 
@@ -86,9 +87,9 @@ def sendComment(comment, headerData, followerId):
 def saveJob(rawData, isTopic, element, user):
     objData = eval(rawData)
     typeValue = 1 if isTopic else 0
-    idValue = element.id if isTopic else element['id']
+    idValue = element['id']
     idInServer = objData['data']['id']
-    fw = FinishedWork(type=typeValue, contentId=idValue, userId=user.id, theTime=datetime.now(),
+    fw = FinishedWork(type=typeValue, contentId=idValue, userId=user['id'], theTime=datetime.now(),
                       idInServer=idInServer)
     fw.save()
     return True
@@ -105,33 +106,35 @@ def pickUser():
     ).filter(
         sex__exact=sex
     )
-    random.shuffle(userList)
     print(userList, sex)
-    user = None if userList.count() == 0 else userList[0]
+    userList = querySetToDict(userList)
+    random.shuffle(userList)
+    user = None if len(userList) == 0 else userList[0]
     return user
 
 
 def getToken(user):
-    if user.isRegister == 0:
-        postData = model_to_dict(user)
+    postData = user
+    if user['isRegister'] == 0:
         jsonData = doRequest(postData, HOST, REG_URL, 'POST', HEADER_DATA)
         if isOK(jsonData):
-            token = eval(jsonData)['data']['token']
+            token = eval(jsonData)['meta']['token']
             HEADER_DATA['accesstoken'] = token
-            user.isRegister = 1
-            user.lastTime = datetime.now()
-            user.save()
+            updateObj = User.objects.get(pk=user['id'])
+            updateObj.isRegister = 1
+            updateObj.lastTime = datetime.now()
+            updateObj.save()
             return True
         else:
             return False
     else:
-        postData = model_to_dict(user)
         jsonData = doRequest(postData, HOST, LOGIN_URL, 'POST', HEADER_DATA)
         if isOK(jsonData):
             token = eval(jsonData)['meta']['token']
             HEADER_DATA['accesstoken'] = token
-            user.lastTime = datetime.now()
-            user.save()
+            updateObj = User.objects.get(pk=user['id'])
+            updateObj.lastTime = datetime.now()
+            updateObj.save()
             return True
         else:
             return False
@@ -151,6 +154,13 @@ def rawQuerySetToDict(rawData):
     return list
 
 
+def querySetToDict(rawData):
+    list = []
+    for row in rawData:
+        list.append(model_to_dict(row))
+    return list
+
+
 def pickElement(isTopic, clubId):
     if isTopic:
         topicList = Topic.objects.exclude(
@@ -158,15 +168,16 @@ def pickElement(isTopic, clubId):
         ).filter(
             clubId__exact=clubId
         )
+        topicList = querySetToDict(topicList)
         random.shuffle(topicList)
-        return None if topicList.count() == 0 else topicList[0]
+        return None if len(topicList) == 0 else topicList[0]
     else:
         commentList = Comment.objects.raw(
             'select b.* from workers_topic AS a LEFT JOIN workers_comment AS b ON a.id = b.postsId_id WHERE a.clubId = %s AND b.lastTime NOT BETWEEN %s AND %s',
             [clubId, date.today(), date.today() + timedelta(days=1)])
         commentList = rawQuerySetToDict(commentList)
         random.shuffle(commentList)
-        return None if commentList.count() == 0 else commentList[0]
+        return None if len(commentList) == 0 else commentList[0]
 
 
 # trigger start here
