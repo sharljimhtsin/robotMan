@@ -107,7 +107,7 @@ def pickUser():
     )
     random.shuffle(userList)
     print(userList, sex)
-    user = userList[0]
+    user = None if userList.count() == 0 else userList[0]
     return user
 
 
@@ -159,14 +159,14 @@ def pickElement(isTopic, clubId):
             clubId__exact=clubId
         )
         random.shuffle(topicList)
-        return topicList[0]
+        return None if topicList.count() == 0 else topicList[0]
     else:
         commentList = Comment.objects.raw(
             'select b.* from workers_topic AS a LEFT JOIN workers_comment AS b ON a.id = b.postsId_id WHERE a.clubId = %s AND b.lastTime NOT BETWEEN %s AND %s',
             [clubId, date.today(), date.today() + timedelta(days=1)])
         commentList = rawQuerySetToDict(commentList)
         random.shuffle(commentList)
-        return commentList[0]
+        return None if commentList.count() == 0 else commentList[0]
 
 
 # trigger start here

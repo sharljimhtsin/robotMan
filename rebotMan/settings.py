@@ -81,6 +81,14 @@ DATABASES = {
     },
     'default': {
         'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'robotman',
+        'USER': 'root',
+        'PASSWORD': 'CfWXVUprWpfA7E7NhzkI',
+        'HOST': 'rm-uf6y34nm9525fyf01o.mysql.rds.aliyuncs.com',
+        'PORT': '3306',
+    },
+    'local': {
+        'ENGINE': 'django.db.backends.mysql',
         'NAME': 'test',
         'USER': 'root',
         'PASSWORD': 'root',
