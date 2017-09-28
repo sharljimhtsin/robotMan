@@ -7,24 +7,21 @@ class TestModel(models.Model):
 
 
 class Topic(models.Model):
-    id = models.IntegerField(primary_key=1)
     title = models.TextField(max_length=50)
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200)
     clubId = models.IntegerField(default=0)
-    lastTime = models.DateTimeField(auto_now_add=1)
+    lastTime = models.DateTimeField(auto_now=1)
 
 
 class Comment(models.Model):
-    id = models.IntegerField(primary_key=1)
     postsId = models.ForeignKey(Topic)
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200)
-    lastTime = models.DateTimeField(auto_now_add=1)
+    lastTime = models.DateTimeField(auto_now=1)
 
 
 class FinishedWork(models.Model):
-    id = models.IntegerField(primary_key=1)
     type = models.IntegerField(default=0)
     contentId = models.IntegerField(default=0)
     userId = models.IntegerField(default=0)
@@ -33,7 +30,6 @@ class FinishedWork(models.Model):
 
 
 class User(models.Model):
-    id = models.IntegerField(primary_key=1)
     username = models.TextField(max_length=20)
     password = models.TextField(max_length=100)
     nickname = models.TextField(max_length=10)
@@ -41,6 +37,6 @@ class User(models.Model):
     birthday = models.DateTimeField()
     sex = models.IntegerField(default=1)
     signature = models.TextField(max_length=50)
-    verifyCode = models.TextField(default='maimengmanhua', max_length=20)
-    lastTime = models.DateTimeField(auto_now_add=1)
+    verifyCode = models.TextField(default='mmmh', max_length=20)
+    lastTime = models.DateTimeField(auto_now=1)
     isRegister = models.IntegerField(default=0)

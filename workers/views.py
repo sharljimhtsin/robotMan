@@ -65,6 +65,7 @@ def isOK(body):
 
 def sendTopic(topic, headerData):
     postData = model_to_dict(topic)
+    postData.pop('id', None)
     rawData = doRequest(postData, HOST, POST_URL, 'POST', headerData)
     topic.lastTime = datetime.now()
     topic.save()
@@ -74,6 +75,7 @@ def sendTopic(topic, headerData):
 def sendComment(comment, headerData, followerId):
     postData = comment.__dict__
     postData['postsId'] = followerId
+    postData.pop('id', None)
     rawData = doRequest(postData, HOST, COMMENT_URL, 'POST', headerData)
     comment.lastTime = datetime.now()
     comment.save()
@@ -138,7 +140,7 @@ def checkTopicOrNot(clubId):
     topicSentList = FinishedWork.objects.raw(
         'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND b.clubId = %s',
         [date.today() - timedelta(days=10), date.today(), clubId])
-    return randomBool() or topicSentList.count() == 0, topicSentList
+    return randomBool() or len(list(topicSentList)) == 0, topicSentList
 
 
 def pickElement(isTopic, clubId):
