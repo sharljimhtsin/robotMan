@@ -178,7 +178,7 @@ def start(request):
         return HttpResponse('ERROR')
     # prepare the user data
     user = pickUser()
-    if getToken(user) is False:
+    if user is None or getToken(user) is False:
         return HttpResponse("ERROR")
 
     # create new topic or give a comment
@@ -189,6 +189,8 @@ def start(request):
         for i in range(0, TOPIC_RATE):
             # prepare the fake data
             element = pickElement(isTopic, clubId)
+            if element is None:
+                return HttpResponse('ERROR')
             rawData = sendTopic(element, HEADER_DATA)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
@@ -200,6 +202,8 @@ def start(request):
             random.shuffle(mainList)
             postId = mainList[0]['idInServer']
             element = pickElement(isTopic, clubId)
+            if element is None:
+                return HttpResponse('ERROR')
             rawData = sendComment(element, HEADER_DATA, postId)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
