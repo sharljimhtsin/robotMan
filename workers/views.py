@@ -239,7 +239,11 @@ def saveTopicAndComment(items):
 
 
 def getVariableByKey(key):
-    return model_to_dict(Variable.objects.get(keyName=key))
+    obj = Variable.objects.get(keyName=key)
+    if obj is None:
+        return {'keyName': '', 'keyValue': ''}
+    else:
+        return model_to_dict(obj)
 
 
 # trigger start here
@@ -249,6 +253,9 @@ def start(request):
     # check parameter
     if clubId is None or not clubId.isdigit():
         return HttpResponse('ERROR')
+    trigger_rate = float(getVariableByKey('trigger_rate')['keyValue']) > random.random()
+    if trigger_rate is False:
+        return HttpResponse("SKIP")
     # prepare the user data
     user = pickUser()
     if user is None or getToken(user) is False:
