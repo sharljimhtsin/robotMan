@@ -62,15 +62,18 @@ def getVariableByKey(key):
 
 def initVariable():
     global HOST, TOPIC_RATE, COMMENT_RATE, TRIGGER_RATE, SEX_RATE, TOPIC_OR_COMMENT_RATE
-    HOST = getVariableByKey('host') if getVariableByKey('host') is not None else HOST
-    TOPIC_RATE = int(getVariableByKey('topic_rate')) if getVariableByKey('topic_rate') is not None else TOPIC_RATE
-    COMMENT_RATE = int(getVariableByKey('comment_rate')) if getVariableByKey(
-        'comment_rate') is not None else COMMENT_RATE
-    TRIGGER_RATE = float(getVariableByKey('trigger_rate')) if getVariableByKey(
-        'trigger_rate') is not None else TRIGGER_RATE
-    SEX_RATE = float(getVariableByKey('sex_rate')) if getVariableByKey('sex_rate') is not None else SEX_RATE
-    TOPIC_OR_COMMENT_RATE = float(getVariableByKey('topic_or_comment_rate')) if getVariableByKey(
-        'topic_or_comment_rate') is not None else TOPIC_OR_COMMENT_RATE
+    try:
+        HOST = getVariableByKey('host') if getVariableByKey('host') is not None else HOST
+        TOPIC_RATE = int(getVariableByKey('topic_rate')) if getVariableByKey('topic_rate') is not None else TOPIC_RATE
+        COMMENT_RATE = int(getVariableByKey('comment_rate')) if getVariableByKey(
+            'comment_rate') is not None else COMMENT_RATE
+        TRIGGER_RATE = float(getVariableByKey('trigger_rate')) if getVariableByKey(
+            'trigger_rate') is not None else TRIGGER_RATE
+        SEX_RATE = float(getVariableByKey('sex_rate')) if getVariableByKey('sex_rate') is not None else SEX_RATE
+        TOPIC_OR_COMMENT_RATE = float(getVariableByKey('topic_or_comment_rate')) if getVariableByKey(
+            'topic_or_comment_rate') is not None else TOPIC_OR_COMMENT_RATE
+    except Variable.DoesNotExist:
+        pass
     return True
 
 
@@ -276,10 +279,12 @@ def start(request):
     # check parameter
     if clubId is None or not clubId.isdigit():
         return HttpResponse('ERROR')
+
     initVariable()
     trigger_rate = TRIGGER_RATE > random.random()
     if trigger_rate is False:
         return HttpResponse("SKIP")
+
     # prepare the user data
     user = pickUser()
     if user is None or getToken(user) is False:
@@ -296,6 +301,7 @@ def start(request):
             element['clubId'] = clubId
             if element is None:
                 return HttpResponse('ERROR')
+
             rawData = sendTopic(element, HEADER_DATA)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
@@ -309,6 +315,7 @@ def start(request):
             element = pickElement(isTopic)
             if element is None:
                 return HttpResponse('ERROR')
+
             rawData = sendComment(element, HEADER_DATA, postId)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
