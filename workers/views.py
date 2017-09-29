@@ -41,7 +41,37 @@ LOGIN_URL = '/login'
 REG_URL = '/register'
 TOPIC_RATE = 1
 COMMENT_RATE = 2
+TRIGGER_RATE = 0.5
+SEX_RATE = 0.5
+TOPIC_OR_COMMENT_RATE = 0.5
 HEADER_DATA = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest', 'devicetype': '3'}
+
+
+def getVariableByKey(key):
+    obj = Variable.objects.get(keyName=key)
+    if obj is None:
+        return None
+    else:
+        dictObj = model_to_dict(obj)
+        value = dictObj['keyValue']
+        if value.strip() == '':
+            return None
+        else:
+            return value
+
+
+def initVariable():
+    global HOST, TOPIC_RATE, COMMENT_RATE, TRIGGER_RATE, SEX_RATE, TOPIC_OR_COMMENT_RATE
+    HOST = getVariableByKey('host') if getVariableByKey('host') is not None else HOST
+    TOPIC_RATE = int(getVariableByKey('topic_rate')) if getVariableByKey('topic_rate') is not None else TOPIC_RATE
+    COMMENT_RATE = int(getVariableByKey('comment_rate')) if getVariableByKey(
+        'comment_rate') is not None else COMMENT_RATE
+    TRIGGER_RATE = float(getVariableByKey('trigger_rate')) if getVariableByKey(
+        'trigger_rate') is not None else TRIGGER_RATE
+    SEX_RATE = float(getVariableByKey('sex_rate')) if getVariableByKey('sex_rate') is not None else SEX_RATE
+    TOPIC_OR_COMMENT_RATE = float(getVariableByKey('topic_or_comment_rate')) if getVariableByKey(
+        'topic_or_comment_rate') is not None else TOPIC_OR_COMMENT_RATE
+    return True
 
 
 def doRequest(postData, hostName, subUrl, method, header=None):
@@ -99,12 +129,12 @@ def saveJob(rawData, isTopic, element, user):
     return True
 
 
-def randomBool():
-    return random.random() < 0.5
+def randomBool(rate=0.5):
+    return random.random() < rate
 
 
 def pickUser():
-    sex = 1 if randomBool() else 0
+    sex = 1 if randomBool(SEX_RATE) else 0
     userList = User.objects.exclude(
         Q(lastTime__gte=date.today()), Q(lastTime__lte=date.today() + timedelta(days=1))
     ).filter(
@@ -118,6 +148,7 @@ def pickUser():
 
 
 def getToken(user):
+    global HEADER_DATA
     postData = user
     if user['isRegister'] == 0:
         jsonData = doRequest(postData, HOST, REG_URL, 'POST', HEADER_DATA)
@@ -148,7 +179,7 @@ def checkTopicOrNot(clubId=0):
     topicSentList = FinishedWork.objects.raw(
         'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND b.clubId = %s',
         [date.today() - timedelta(days=10), date.today() + timedelta(days=1), clubId])
-    return randomBool() or len(list(topicSentList)) == 0, rawQuerySetToDict(topicSentList)
+    return randomBool(TOPIC_OR_COMMENT_RATE) or len(list(topicSentList)) == 0, rawQuerySetToDict(topicSentList)
 
 
 def rawQuerySetToDict(rawData):
@@ -238,14 +269,6 @@ def saveTopicAndComment(items):
     return True
 
 
-def getVariableByKey(key):
-    obj = Variable.objects.get(keyName=key)
-    if obj is None:
-        return {'keyName': '', 'keyValue': ''}
-    else:
-        return model_to_dict(obj)
-
-
 # trigger start here
 def start(request):
     post = request.POST
@@ -253,7 +276,8 @@ def start(request):
     # check parameter
     if clubId is None or not clubId.isdigit():
         return HttpResponse('ERROR')
-    trigger_rate = float(getVariableByKey('trigger_rate')['keyValue']) > random.random()
+    initVariable()
+    trigger_rate = TRIGGER_RATE > random.random()
     if trigger_rate is False:
         return HttpResponse("SKIP")
     # prepare the user data

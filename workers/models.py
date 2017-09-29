@@ -44,4 +44,4 @@ class User(models.Model):
 
 class Variable(models.Model):
     keyName = models.TextField(max_length=20)
-    keyValue = models.TextField(max_length=20)
+    keyValue = models.TextField(max_length=50)
