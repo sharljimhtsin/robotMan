@@ -6,6 +6,7 @@ from django.forms.models import model_to_dict
 from django.db.models import Q
 import http.client, urllib.parse
 import random, copy, time
+from xlrd import open_workbook
 
 
 def index(request):
@@ -179,6 +180,60 @@ def pickElement(isTopic, clubId):
         commentList = rawQuerySetToDict(commentList)
         random.shuffle(commentList)
         return None if len(commentList) == 0 else commentList[0]
+
+
+def parseExcel(request):
+    fileName = 'excel.xlsx'
+    wb = open_workbook(fileName)
+    for sheet in wb.sheets():
+        number_of_rows = sheet.nrows
+        number_of_columns = sheet.ncols
+        items = []
+        for row in range(1, number_of_rows):
+            values = []
+            for col in range(number_of_columns):
+                value = (sheet.cell(row, col).value)
+                try:
+                    value = str(int(value))
+                except ValueError:
+                    pass
+                finally:
+                    values.append(value)
+            item = values
+            items.append(item)
+
+    for item in items:
+        saveTopicAndComment(item)
+    return HttpResponse("OK")
+
+
+def saveTopicAndComment(items):
+    isTopic = False
+    isTopicContent = False
+    isComment = False
+    currentIndex = 0
+    postObj = None
+    title = ''
+    content = ''
+    comment = ''
+    for item in items:
+        if item == '':
+            continue
+        currentIndex += 1
+        isTopic = True if currentIndex == 1 else False
+        isTopicContent = True if currentIndex == 2 else False
+        isComment = True if currentIndex > 2 else False
+        if (isTopic):
+            title = item
+        elif (isTopicContent):
+            content = item
+            postObj = Topic.objects.create(title=title, content=content)
+        elif (isComment):
+            comment = item
+            Comment.objects.create(postsId=postObj, content=comment)
+        else:
+            continue
+    return True
 
 
 # trigger start here
