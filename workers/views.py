@@ -48,7 +48,11 @@ HEADER_DATA = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest',
 
 
 def getVariableByKey(key):
-    obj = Variable.objects.get(keyName=key)
+    obj = None
+    try:
+        obj = Variable.objects.get(keyName=key)
+    except Variable.DoesNotExist:
+        obj = None
     if obj is None:
         return None
     else:
@@ -62,18 +66,15 @@ def getVariableByKey(key):
 
 def initVariable():
     global HOST, TOPIC_RATE, COMMENT_RATE, TRIGGER_RATE, SEX_RATE, TOPIC_OR_COMMENT_RATE
-    try:
-        HOST = getVariableByKey('host') if getVariableByKey('host') is not None else HOST
-        TOPIC_RATE = int(getVariableByKey('topic_rate')) if getVariableByKey('topic_rate') is not None else TOPIC_RATE
-        COMMENT_RATE = int(getVariableByKey('comment_rate')) if getVariableByKey(
-            'comment_rate') is not None else COMMENT_RATE
-        TRIGGER_RATE = float(getVariableByKey('trigger_rate')) if getVariableByKey(
-            'trigger_rate') is not None else TRIGGER_RATE
-        SEX_RATE = float(getVariableByKey('sex_rate')) if getVariableByKey('sex_rate') is not None else SEX_RATE
-        TOPIC_OR_COMMENT_RATE = float(getVariableByKey('topic_or_comment_rate')) if getVariableByKey(
-            'topic_or_comment_rate') is not None else TOPIC_OR_COMMENT_RATE
-    except Variable.DoesNotExist:
-        pass
+    HOST = getVariableByKey('host') if getVariableByKey('host') is not None else HOST
+    TOPIC_RATE = int(getVariableByKey('topic_rate')) if getVariableByKey('topic_rate') is not None else TOPIC_RATE
+    COMMENT_RATE = int(getVariableByKey('comment_rate')) if getVariableByKey(
+        'comment_rate') is not None else COMMENT_RATE
+    TRIGGER_RATE = float(getVariableByKey('trigger_rate')) if getVariableByKey(
+        'trigger_rate') is not None else TRIGGER_RATE
+    SEX_RATE = float(getVariableByKey('sex_rate')) if getVariableByKey('sex_rate') is not None else SEX_RATE
+    TOPIC_OR_COMMENT_RATE = float(getVariableByKey('topic_or_comment_rate')) if getVariableByKey(
+        'topic_or_comment_rate') is not None else TOPIC_OR_COMMENT_RATE
     return True
 
 
