@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from workers.models import TestModel, Topic, Comment, User, FinishedWork
+from workers.models import TestModel, Topic, Comment, User, FinishedWork, Variable
 from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
 from django.db.models import Q
@@ -234,6 +234,10 @@ def saveTopicAndComment(items):
         else:
             continue
     return True
+
+
+def getVariableByKey(key):
+    return Variable.objects.get(keyName=key)
 
 
 # trigger start here

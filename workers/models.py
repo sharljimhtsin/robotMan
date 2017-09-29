@@ -40,3 +40,8 @@ class User(models.Model):
     verifyCode = models.TextField(default='mmmh', max_length=20)
     lastTime = models.DateTimeField(auto_now=1)
     isRegister = models.IntegerField(default=0)
+
+
+class Variable(models.Model):
+    keyName = models.TextField(max_length=20, unique=1)
+    keyValue = models.TextField(max_length=20)
