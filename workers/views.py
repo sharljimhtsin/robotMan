@@ -29,6 +29,8 @@ def index(request):
 
 
 def doTest(request):
+    obj = Variable.objects.get(keyName='trigger_rate')
+    print(model_to_dict(obj))
     return HttpResponse('hahahah')
 
 
@@ -237,7 +239,7 @@ def saveTopicAndComment(items):
 
 
 def getVariableByKey(key):
-    return Variable.objects.get(keyName=key)
+    return model_to_dict(Variable.objects.get(keyName=key))
 
 
 # trigger start here
