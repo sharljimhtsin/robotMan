@@ -142,7 +142,7 @@ def getToken(user):
             return False
 
 
-def checkTopicOrNot(clubId):
+def checkTopicOrNot(clubId=0):
     topicSentList = FinishedWork.objects.raw(
         'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND b.clubId = %s',
         [date.today() - timedelta(days=10), date.today() + timedelta(days=1), clubId])
@@ -163,7 +163,7 @@ def querySetToDict(rawData):
     return list
 
 
-def pickElement(isTopic, clubId):
+def pickElement(isTopic, clubId=0):
     if isTopic:
         topicList = Topic.objects.exclude(
             Q(lastTime__gte=date.today()), Q(lastTime__lte=date.today() + timedelta(days=1))
@@ -249,13 +249,14 @@ def start(request):
         return HttpResponse("ERROR")
 
     # create new topic or give a comment
-    isTopic, mainList = checkTopicOrNot(clubId)
+    isTopic, mainList = checkTopicOrNot()
     print(isTopic, mainList)
     # do the post
     if isTopic:
         for i in range(0, TOPIC_RATE):
             # prepare the fake data
-            element = pickElement(isTopic, clubId)
+            element = pickElement(isTopic)
+            element['clubId'] = clubId
             if element is None:
                 return HttpResponse('ERROR')
             rawData = sendTopic(element, HEADER_DATA)
@@ -268,7 +269,7 @@ def start(request):
             # prepare the fake data
             random.shuffle(mainList)
             postId = mainList[0]['idInServer']
-            element = pickElement(isTopic, clubId)
+            element = pickElement(isTopic)
             if element is None:
                 return HttpResponse('ERROR')
             rawData = sendComment(element, HEADER_DATA, postId)
