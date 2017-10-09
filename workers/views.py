@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from workers.models import TestModel, Topic, Comment, User, FinishedWork, Variable
+from workers.models import TestModel, Topic, Comment, User, FinishedWork, Variable, TopicServer, UserServer, \
+    CommentServer
 from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
 from django.db.models import Q
@@ -31,6 +32,14 @@ def index(request):
 def doTest(request):
     obj = Variable.objects.get(keyName='trigger_rate')
     print(model_to_dict(obj))
+    obj = CommentServer.objects.using('maimeng').all()
+    for o in obj:
+        print(model_to_dict(o))
+        break
+    obj = Comment.objects.all()
+    for o in obj:
+        print(model_to_dict(o))
+        break
     return HttpResponse('hahahah')
 
 

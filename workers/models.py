@@ -349,7 +349,7 @@ class Comicchaptercontent(models.Model):
         unique_together = (('chapterid', 'order'),)
 
 
-class Comment(models.Model):
+class CommentServer(models.Model):
     id = models.BigAutoField(primary_key=True)
     content = models.TextField()
     crccontent = models.BigIntegerField(db_column='crcContent', blank=True, null=True)  # Field name made lowercase.
@@ -807,7 +807,7 @@ class Test(models.Model):
         db_table = 'test'
 
 
-class Topic(models.Model):
+class TopicServer(models.Model):
     id = models.BigAutoField(primary_key=True)
     booktype = models.IntegerField(db_column='bookType')  # Field name made lowercase.
     name = models.CharField(max_length=20)
@@ -848,7 +848,7 @@ class Transaction(models.Model):
         db_table = 'transaction'
 
 
-class User(models.Model):
+class UserServer(models.Model):
     id = models.BigAutoField(primary_key=True)
     telephone = models.CharField(max_length=255, blank=True, null=True)
     nickname = models.CharField(max_length=255)
