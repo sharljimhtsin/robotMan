@@ -156,14 +156,14 @@ def sendCommentViaDB(comment, user, followerId):
     comment['postsId'] = followerId
     rawData = CommentServer.objects.using('maimeng').create(
         content=comment['content'],
-        imageurls=comment['imageurls'],
+        imageurls=comment['imageUrls'],
         valuetype=1,
         valueid=followerId,
         floor=1,
         status=1,
         viewtype=1,
         userid=user['idInServer'],
-        ip='127.0.0.1'
+        ip=0
     )
     updateObj = Comment.objects.get(pk=comment['id'])
     updateObj.lastTime = datetime.now()
@@ -243,20 +243,19 @@ def needRegister(user):
             enableemchat=1,
             status=1)
         if obj is not None:
-            obj = model_to_dict(obj)
             updateObj = User.objects.get(pk=user['id'])
             updateObj.isRegister = 1
-            updateObj.idInServer = obj['id']
+            updateObj.idInServer = obj.id
             updateObj.lastTime = datetime.now()
             updateObj.save()
-            return updateObj['idInServer']
+            return updateObj.idInServer
         else:
             return 0
     else:
         updateObj = User.objects.get(pk=user['id'])
         updateObj.lastTime = datetime.now()
         updateObj.save()
-        return updateObj['idInServer']
+        return updateObj.idInServer
 
 
 def checkTopicOrNot(clubId=0):
