@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
-from workers.models import TestModel, Topic, Comment, User, FinishedWork, Variable, TopicServer, UserServer, \
-    CommentServer
+from workers.models import TestModel, Topic, Comment, User, FinishedWork, Variable, UserServer, \
+    CommentServer, Posts
 from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
 from django.db.models import Q
@@ -121,19 +121,22 @@ def sendTopic(topic, headerData):
 
 
 def sendTopicViaDB(topic, user):
-    rawData = TopicServer.objects.using('maimeng').create(
-        booktype=topic['clubId'],
-        name=topic['title'],
-        code='TEST',
-        images=topic['imageUrls'],
-        banner=1,
-        introduction=topic['content'],
+    rawData = Posts.objects.using('maimeng').create(
         type=1,
-        sourcetype=1,
+        title=topic['title'],
+        content=topic['content'],
+        imageurls=topic['imageUrls'],
+        istop=0,
+        label='',
+        level=1,
+        viewcount=1,
+        voteid=0,
+        clubid=topic['clubId'],
+        userid=user['idInServer'],
+        isadmin=0,
+        ip=0,
         offstatus=0,
-        priority=1,
-        status=1,
-        userid=user['idInServer']
+        status=1
     )
     updateObj = Topic.objects.get(pk=topic['id'])
     updateObj.lastTime = datetime.now()
