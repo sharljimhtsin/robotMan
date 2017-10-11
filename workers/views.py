@@ -136,7 +136,9 @@ def sendTopicViaDB(topic, user):
         isadmin=0,
         ip=0,
         offstatus=0,
-        status=1
+        status=1,
+        createtime=datetime.now(),
+        modifytime=datetime.now()
     )
     updateObj = Topic.objects.get(pk=topic['id'])
     updateObj.lastTime = datetime.now()
