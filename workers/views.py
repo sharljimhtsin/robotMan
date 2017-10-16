@@ -132,7 +132,7 @@ def sendTopicViaDB(topic, user):
         viewcount=1,
         voteid=0,
         clubid=topic['clubId'],
-        userid=user['idInServer'],
+        userid=user['id'],
         isadmin=0,
         ip=0,
         offstatus=0,
@@ -167,7 +167,7 @@ def sendCommentViaDB(comment, user, followerId):
         floor=1,
         status=1,
         viewtype=1,
-        userid=user['idInServer'],
+        userid=user['id'],
         ip=0
     )
     updateObj = Comment.objects.get(pk=comment['id'])
@@ -193,6 +193,22 @@ def saveJob(rawData, isTopic, element, user, isDB=0):
 
 def randomBool(rate=0.5):
     return random.random() < rate
+
+
+def pick_user():
+    sex = 1 if randomBool(SEX_RATE) else 2
+    user_list = UserServer.objects.using('maimeng').filter(
+        id__range=(2000001, 2010000)
+    ).filter(
+        sex__exact=sex
+    ).order_by(
+        'modifytime'
+    )[:10]
+    print(user_list, sex)
+    user_list = querySetToDict(user_list)
+    random.shuffle(user_list)
+    user = None if len(user_list) == 0 else user_list[0]
+    return user
 
 
 def pickUser():
@@ -411,7 +427,7 @@ def start(request):
 
 
 # trigger start here
-def startFork(request):
+def start_fork(request):
     post = request.POST
     clubId = post.get('id')
     # check parameter
@@ -460,4 +476,60 @@ def startFork(request):
             else:
                 return HttpResponse('ERROR')
 
+    return HttpResponse('OK')
+
+
+# trigger start here
+def start_fork_again(request):
+    post = request.POST
+    clubId = post.get('id')
+    # check parameter
+    if clubId is None or not clubId.isdigit():
+        return HttpResponse('ERROR')
+
+    initVariable()
+    trigger_rate = TRIGGER_RATE > random.random()
+    if trigger_rate is False:
+        return HttpResponse("SKIP")
+
+    # prepare the user data
+    user = pick_user()
+    if user is None:
+        return HttpResponse("ERROR")
+
+    # create new topic or give a comment
+    isTopic, mainList = checkTopicOrNot()
+    print(isTopic, mainList)
+    # do the post
+    if isTopic:
+        for i in range(0, TOPIC_RATE):
+            # prepare the fake data
+            element = pickElement(isTopic)
+            element['clubId'] = clubId
+            if element is None:
+                return HttpResponse('ERROR')
+
+            rawData = sendTopicViaDB(element, user)
+            if rawData is not None:
+                saveJob(rawData, isTopic, element, user, 1)
+            else:
+                return HttpResponse('ERROR')
+    else:
+        for i in range(0, COMMENT_RATE):
+            # prepare the fake data
+            random.shuffle(mainList)
+            postId = mainList[0]['idInServer']
+            element = pickElement(isTopic)
+            if element is None:
+                return HttpResponse('ERROR')
+
+            rawData = sendCommentViaDB(element, user, postId)
+            if rawData is not None:
+                saveJob(rawData, isTopic, element, user, 1)
+            else:
+                return HttpResponse('ERROR')
+
+    update_obj = UserServer.objects.using('maimeng').get(pk=user[id])
+    update_obj.modifytime = datetime.now()
+    update_obj.save()
     return HttpResponse('OK')
