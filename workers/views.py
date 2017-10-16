@@ -8,6 +8,7 @@ from django.db.models import Q
 import http.client, urllib.parse
 import random, copy, time
 from xlrd import open_workbook
+from zlib import crc32
 
 
 def index(request):
@@ -125,6 +126,7 @@ def sendTopicViaDB(topic, user):
         type=0,
         title=topic['title'],
         content=topic['content'],
+        crccontent=crc32(str.encode(topic['content'])),  # crc16.crc16xmodem(str.encode(topic['content'])),
         imageurls=topic['imageUrls'],
         istop=0,
         label='',
