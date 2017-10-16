@@ -10,7 +10,7 @@ class TestModel(models.Model):
 class Topic(models.Model):
     title = models.TextField(max_length=50)
     content = models.TextField(max_length=300)
-    imageUrls = models.TextField(max_length=200, null=1, blank=1, default='')
+    imageUrls = models.TextField(max_length=200, null=1, blank=1, default='[]')
     clubId = models.IntegerField(default=0)
     lastTime = models.DateTimeField(auto_now=1)
 
@@ -18,7 +18,7 @@ class Topic(models.Model):
 class Comment(models.Model):
     postsId = models.ForeignKey(Topic)
     content = models.TextField(max_length=300)
-    imageUrls = models.TextField(max_length=200, null=1, blank=1, default='')
+    imageUrls = models.TextField(max_length=200, null=1, blank=1, default='[]')
     lastTime = models.DateTimeField(auto_now=1)
 
 
