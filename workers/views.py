@@ -529,7 +529,7 @@ def start_fork_again(request):
             else:
                 return HttpResponse('ERROR')
 
-    update_obj = UserServer.objects.using('maimeng').get(pk=user[id])
+    update_obj = UserServer.objects.using('maimeng').get(pk=user['id'])
     update_obj.modifytime = datetime.now()
     update_obj.save()
     return HttpResponse('OK')
