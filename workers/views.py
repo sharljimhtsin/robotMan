@@ -122,14 +122,14 @@ def sendTopic(topic, headerData):
 
 def sendTopicViaDB(topic, user):
     rawData = Posts.objects.using('maimeng').create(
-        type=1,
+        type=0,
         title=topic['title'],
         content=topic['content'],
         imageurls=topic['imageUrls'],
         istop=0,
         label='',
-        level=1,
-        viewcount=1,
+        level=0,
+        viewcount=0,
         voteid=0,
         clubid=topic['clubId'],
         userid=user['id'],
@@ -137,6 +137,9 @@ def sendTopicViaDB(topic, user):
         ip=0,
         offstatus=0,
         status=1,
+        showtime=datetime.now(),
+        begintime=datetime.now(),
+        endtime=datetime.now() + timedelta(days=7),
         createtime=datetime.now(),
         modifytime=datetime.now()
     )
