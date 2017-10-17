@@ -9,6 +9,8 @@ import http.client, urllib.parse
 import random, copy, time
 from xlrd import open_workbook
 from zlib import crc32
+from django.utils import timezone
+import pytz
 
 
 def index(request):
@@ -111,12 +113,16 @@ def isOK(body):
         return False
 
 
+def get_local_datetime():
+    return datetime.strftime(timezone.now(), '%Y-%m-%d %H:%M:%S')
+
+
 def sendTopic(topic, headerData):
     postData = copy.deepcopy(topic)
     postData.pop('id', None)
     rawData = doRequest(postData, HOST, POST_URL, 'POST', headerData)
     updateObj = Topic.objects.get(pk=topic['id'])
-    updateObj.lastTime = datetime.now()
+    updateObj.lastTime = get_local_datetime()
     updateObj.save()
     return rawData
 
@@ -139,12 +145,12 @@ def sendTopicViaDB(topic, user):
         ip=0,
         offstatus=0,
         status=1,
-        showtime=datetime.now(),
-        createtime=datetime.now(),
-        modifytime=datetime.now()
+        showtime=get_local_datetime(),
+        createtime=get_local_datetime(),
+        modifytime=get_local_datetime()
     )
     updateObj = Topic.objects.get(pk=topic['id'])
-    updateObj.lastTime = datetime.now()
+    updateObj.lastTime = get_local_datetime()
     updateObj.save()
     return model_to_dict(rawData)
 
@@ -155,7 +161,7 @@ def sendComment(comment, headerData, followerId):
     postData.pop('id', None)
     rawData = doRequest(postData, HOST, COMMENT_URL, 'POST', headerData)
     updateObj = Comment.objects.get(pk=comment['id'])
-    updateObj.lastTime = datetime.now()
+    updateObj.lastTime = get_local_datetime()
     updateObj.save()
     return rawData
 
@@ -174,7 +180,7 @@ def sendCommentViaDB(comment, user, followerId):
         ip=0
     )
     updateObj = Comment.objects.get(pk=comment['id'])
-    updateObj.lastTime = datetime.now()
+    updateObj.lastTime = get_local_datetime()
     updateObj.save()
     return model_to_dict(rawData)
 
@@ -188,7 +194,7 @@ def saveJob(rawData, isTopic, element, user, isDB=0):
         idInServer = rawData['id']
     typeValue = 1 if isTopic else 0
     idValue = element['id']
-    fw = FinishedWork(type=typeValue, contentId=idValue, userId=user['id'], theTime=datetime.now(),
+    fw = FinishedWork(type=typeValue, contentId=idValue, userId=user['id'], theTime=get_local_datetime(),
                       idInServer=idInServer)
     fw.save()
     return True
@@ -238,7 +244,7 @@ def getToken(user):
             HEADER_DATA['accesstoken'] = token
             updateObj = User.objects.get(pk=user['id'])
             updateObj.isRegister = 1
-            updateObj.lastTime = datetime.now()
+            updateObj.lastTime = get_local_datetime()
             updateObj.save()
             return True
         else:
@@ -249,7 +255,7 @@ def getToken(user):
             token = eval(jsonData)['meta']['token']
             HEADER_DATA['accesstoken'] = token
             updateObj = User.objects.get(pk=user['id'])
-            updateObj.lastTime = datetime.now()
+            updateObj.lastTime = get_local_datetime()
             updateObj.save()
             return True
         else:
@@ -270,14 +276,14 @@ def needRegister(user):
             updateObj = User.objects.get(pk=user['id'])
             updateObj.isRegister = 1
             updateObj.idInServer = obj.id
-            updateObj.lastTime = datetime.now()
+            updateObj.lastTime = get_local_datetime()
             updateObj.save()
             return updateObj.idInServer
         else:
             return 0
     else:
         updateObj = User.objects.get(pk=user['id'])
-        updateObj.lastTime = datetime.now()
+        updateObj.lastTime = get_local_datetime()
         updateObj.save()
         return updateObj.idInServer
 
@@ -533,6 +539,6 @@ def start_fork_again(request):
                 return HttpResponse('ERROR')
 
     update_obj = UserServer.objects.using('maimeng').get(pk=user['id'])
-    update_obj.modifytime = datetime.now()
+    update_obj.modifytime = get_local_datetime()
     update_obj.save()
     return HttpResponse('OK')

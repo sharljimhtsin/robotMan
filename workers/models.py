@@ -12,21 +12,21 @@ class Topic(models.Model):
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200, null=1, blank=1, default='[]')
     clubId = models.IntegerField(default=0)
-    lastTime = models.DateTimeField(auto_now=1)
+    lastTime = models.DateTimeField(auto_now_add=1)
 
 
 class Comment(models.Model):
     postsId = models.ForeignKey(Topic)
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200, null=1, blank=1, default='[]')
-    lastTime = models.DateTimeField(auto_now=1)
+    lastTime = models.DateTimeField(auto_now_add=1)
 
 
 class FinishedWork(models.Model):
     type = models.IntegerField(default=0)
     contentId = models.IntegerField(default=0)
     userId = models.IntegerField(default=0)
-    theTime = models.DateTimeField(auto_now_add=1)
+    theTime = models.TextField(max_length=20)
     idInServer = models.IntegerField(default=0)
 
 
@@ -39,7 +39,7 @@ class User(models.Model):
     sex = models.IntegerField(default=1)
     signature = models.TextField(max_length=50)
     verifyCode = models.TextField(default='mmmh', max_length=20)
-    lastTime = models.DateTimeField(auto_now=1)
+    lastTime = models.DateTimeField(auto_now_add=1)
     isRegister = models.IntegerField(default=0)
     idInServer = models.IntegerField(default=0)
 
