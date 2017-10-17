@@ -12,14 +12,14 @@ class Topic(models.Model):
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200, null=1, blank=1, default='[]')
     clubId = models.IntegerField(default=0)
-    lastTime = models.DateTimeField(auto_now_add=1)
+    lastTime = models.TextField(max_length=20)
 
 
 class Comment(models.Model):
     postsId = models.ForeignKey(Topic)
     content = models.TextField(max_length=300)
     imageUrls = models.TextField(max_length=200, null=1, blank=1, default='[]')
-    lastTime = models.DateTimeField(auto_now_add=1)
+    lastTime = models.TextField(max_length=20)
 
 
 class FinishedWork(models.Model):
