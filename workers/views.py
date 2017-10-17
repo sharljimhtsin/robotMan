@@ -309,20 +309,20 @@ def querySetToDict(rawData):
     return list
 
 
-def pickElement(isTopic, clubId=0):
-    if isTopic:
+def pickElement(is_topic, post_id=0, club_id=0):
+    if is_topic:
         topicList = Topic.objects.exclude(
             Q(lastTime__gte=date.today()), Q(lastTime__lte=date.today() + timedelta(days=1))
         ).filter(
-            clubId__exact=clubId
+            clubId__exact=club_id
         )
         topicList = querySetToDict(topicList)
         random.shuffle(topicList)
         return None if len(topicList) == 0 else topicList[0]
     else:
         commentList = Comment.objects.raw(
-            'select b.* from workers_topic AS a LEFT JOIN workers_comment AS b ON a.id = b.postsId_id WHERE a.clubId = %s AND b.lastTime NOT BETWEEN %s AND %s',
-            [clubId, date.today(), date.today() + timedelta(days=1)])
+            'select b.* from workers_topic AS a LEFT JOIN workers_comment AS b ON a.id = b.postsId_id WHERE a.clubId = %s AND a.id = %s AND b.lastTime NOT BETWEEN %s AND %s',
+            [club_id, post_id, date.today(), date.today() + timedelta(days=1)])
         commentList = rawQuerySetToDict(commentList)
         random.shuffle(commentList)
         return None if len(commentList) == 0 else commentList[0]
@@ -528,7 +528,10 @@ def start_fork_again(request):
             # prepare the fake data
             random.shuffle(mainList)
             postId = mainList[0]['idInServer']
-            element = pickElement(isTopic)
+            source_id = mainList[0]['contentId']
+            element = pickElement(isTopic, source_id)
+            print(element)
+            print(source_id)
             if element is None:
                 return HttpResponse('ERROR')
 
