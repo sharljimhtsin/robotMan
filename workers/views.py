@@ -140,8 +140,6 @@ def sendTopicViaDB(topic, user):
         offstatus=0,
         status=1,
         showtime=datetime.now(),
-        begintime=datetime.now(),
-        endtime=datetime.now() + timedelta(days=7),
         createtime=datetime.now(),
         modifytime=datetime.now()
     )
