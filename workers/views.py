@@ -11,9 +11,17 @@ from xlrd import open_workbook
 from zlib import crc32
 from django.utils import timezone
 import pytz
+from bs4 import BeautifulSoup
+import logging
+
+logger = logging.getLogger('fileLog')
 
 
 def index(request):
+    logger.debug("test log 1")
+    logger.info("test log 2")
+    logger.error("test log 3")
+    logger.critical("test log 4")
     print(request.GET)
     data = TestModel.objects.all()
     print(model_to_dict(data[0]))
