@@ -396,6 +396,7 @@ def start(request):
     clubId = post.get('id')
     # check parameter
     if clubId is None or not clubId.isdigit():
+        logger.error("clubId error")
         return HttpResponse('ERROR')
 
     initVariable()
@@ -406,6 +407,7 @@ def start(request):
     # prepare the user data
     user = pickUser()
     if user is None or getToken(user) is False:
+        logger.error("user error")
         return HttpResponse("ERROR")
 
     # create new topic or give a comment
@@ -418,12 +420,14 @@ def start(request):
             element = pickElement(isTopic)
             element['clubId'] = clubId
             if element is None:
+                logger.error("topic error")
                 return HttpResponse('ERROR')
 
             rawData = sendTopic(element, HEADER_DATA)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
             else:
+                logger.error("save topic error")
                 return HttpResponse('ERROR')
     else:
         for i in range(0, COMMENT_RATE):
@@ -432,12 +436,14 @@ def start(request):
             postId = mainList[0]['idInServer']
             element = pickElement(isTopic)
             if element is None:
+                logger.error("comment error")
                 return HttpResponse('ERROR')
 
             rawData = sendComment(element, HEADER_DATA, postId)
             if isOK(rawData):
                 saveJob(rawData, isTopic, element, user)
             else:
+                logger.error("save comment error")
                 return HttpResponse('ERROR')
 
     return HttpResponse('OK')
@@ -502,6 +508,7 @@ def start_fork_again(request):
     clubId = post.get('id')
     # check parameter
     if clubId is None or not clubId.isdigit():
+        logger.error("clubId error")
         return HttpResponse('ERROR')
 
     initVariable()
@@ -512,6 +519,7 @@ def start_fork_again(request):
     # prepare the user data
     user = pick_user()
     if user is None:
+        logger.error("user error")
         return HttpResponse("ERROR")
 
     # create new topic or give a comment
@@ -524,12 +532,14 @@ def start_fork_again(request):
             element = pickElement(isTopic)
             element['clubId'] = clubId
             if element is None:
+                logger.error("topic error")
                 return HttpResponse('ERROR')
 
             rawData = sendTopicViaDB(element, user)
             if rawData is not None:
                 saveJob(rawData, isTopic, element, user, 1)
             else:
+                logger.error("save topic error")
                 return HttpResponse('ERROR')
     else:
         for i in range(0, COMMENT_RATE):
@@ -541,12 +551,14 @@ def start_fork_again(request):
             print(element)
             print(source_id)
             if element is None:
+                logger.error("comment error")
                 return HttpResponse('ERROR')
 
             rawData = sendCommentViaDB(element, user, postId)
             if rawData is not None:
                 saveJob(rawData, isTopic, element, user, 1)
             else:
+                logger.error("save comment error")
                 return HttpResponse('ERROR')
 
     update_obj = UserServer.objects.using('maimeng').get(pk=user['id'])
