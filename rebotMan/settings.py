@@ -25,7 +25,7 @@ SECRET_KEY = 'wjr3q$pq=k*&q$n)ipf3^fkz7pz=d&)b-7#3=-t^#bs%wj*u3*'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.1.123', '127.0.0.1', '192.168.1.131']
+ALLOWED_HOSTS = ['192.168.1.123', '127.0.0.1', '192.168.1.131', '172.19.102.243']
 
 
 # Application definition
@@ -88,6 +88,14 @@ DATABASES = {
         'PORT': '3306',
     },
     'maimeng': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'maimeng',
+        'USER': 'maimeng',
+        'PASSWORD': 'DFGrFbpZNC5RILdz3yYI',
+        'HOST': 'rm-uf6xb2f19vq9xb4u8rw.mysql.rds.aliyuncs.com',
+        'PORT': '3306',
+    },
+    'maimeng_test': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'maimeng',
         'USER': 'root',
