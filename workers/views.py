@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponse
 from workers.models import TestModel, Topic, Comment, User, FinishedWork, Variable, UserServer, \
-    CommentServer, Posts
+    CommentServer, Posts, Book
 from datetime import datetime, timedelta, time, date
 from django.forms.models import model_to_dict
 from django.db.models import Q
@@ -502,6 +502,16 @@ def start_fork(request):
     return HttpResponse('OK')
 
 
+def skip_or_not(club_id):
+    objects = Book.objects.using('maimeng').filter(
+        type__exact=1
+    ).filter(
+        clubid=club_id
+    )
+    maps = querySetToDict(objects)
+    return True if len(maps) == 0 else False
+
+
 # trigger start here
 def start_fork_again(request):
     post = request.POST
@@ -510,6 +520,11 @@ def start_fork_again(request):
     if clubId is None or not clubId.isdigit():
         logger.error("clubId error")
         return HttpResponse('ERROR')
+
+    # check parameter
+    if skip_or_not(clubId):
+        logger.error("clubId skip")
+        return HttpResponse('SKIP')
 
     initVariable()
     trigger_rate = TRIGGER_RATE > random.random()
