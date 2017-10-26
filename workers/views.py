@@ -41,6 +41,7 @@ def index(request):
 
 
 def doTest(request):
+    '''
     obj = Variable.objects.get(keyName='trigger_rate')
     print(model_to_dict(obj))
     obj = CommentServer.objects.using('maimeng').all()
@@ -51,6 +52,9 @@ def doTest(request):
     for o in obj:
         print(model_to_dict(o))
         break
+    '''
+    count = sum(int(randomBool(0.70)) for i in range(10000))
+    print(count)
     return HttpResponse('hahahah')
 
 
@@ -185,7 +189,9 @@ def sendCommentViaDB(comment, user, followerId):
         status=1,
         viewtype=1,
         userid=user['id'],
-        ip=0
+        ip=0,
+        createtime=get_local_datetime(),
+        modifytime=get_local_datetime()
     )
     updateObj = Comment.objects.get(pk=comment['id'])
     updateObj.lastTime = get_local_datetime()
@@ -193,7 +199,7 @@ def sendCommentViaDB(comment, user, followerId):
     return model_to_dict(rawData)
 
 
-def saveJob(rawData, isTopic, element, user, isDB=0):
+def saveJob(rawData, isTopic, element, user, clubId, isDB=0):
     idInServer = 0
     if isDB == 0:
         objData = eval(rawData)
@@ -203,7 +209,7 @@ def saveJob(rawData, isTopic, element, user, isDB=0):
     typeValue = 1 if isTopic else 0
     idValue = element['id']
     fw = FinishedWork(type=typeValue, contentId=idValue, userId=user['id'], theTime=get_local_datetime(),
-                      idInServer=idInServer)
+                      idInServer=idInServer, clubId=clubId)
     fw.save()
     return True
 
@@ -298,7 +304,7 @@ def needRegister(user):
 
 def checkTopicOrNot(clubId=0):
     topicSentList = FinishedWork.objects.raw(
-        'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND b.clubId = %s',
+        'select a.* from workers_finishedwork AS a LEFT JOIN workers_topic AS b ON a.contentId = b.id WHERE a.theTime BETWEEN %s AND %s AND a.type = 1 AND a.clubId = %s',
         [date.today() - timedelta(days=10), date.today() + timedelta(days=1), clubId])
     return randomBool(TOPIC_OR_COMMENT_RATE) or len(list(topicSentList)) == 0, rawQuerySetToDict(topicSentList)
 
@@ -538,7 +544,7 @@ def start_fork_again(request):
         return HttpResponse("ERROR")
 
     # create new topic or give a comment
-    isTopic, mainList = checkTopicOrNot()
+    isTopic, mainList = checkTopicOrNot(clubId)
     print(isTopic, mainList)
     # do the post
     if isTopic:
@@ -552,7 +558,7 @@ def start_fork_again(request):
 
             rawData = sendTopicViaDB(element, user)
             if rawData is not None:
-                saveJob(rawData, isTopic, element, user, 1)
+                saveJob(rawData, isTopic, element, user, clubId, 1)
             else:
                 logger.error("save topic error")
                 return HttpResponse('ERROR')
@@ -571,7 +577,7 @@ def start_fork_again(request):
 
             rawData = sendCommentViaDB(element, user, postId)
             if rawData is not None:
-                saveJob(rawData, isTopic, element, user, 1)
+                saveJob(rawData, isTopic, element, user, clubId, 1)
             else:
                 logger.error("save comment error")
                 return HttpResponse('ERROR')

@@ -28,6 +28,7 @@ class FinishedWork(models.Model):
     userId = models.IntegerField(default=0)
     theTime = models.TextField(max_length=20)
     idInServer = models.IntegerField(default=0)
+    clubId = models.IntegerField(default=0)
 
 
 class User(models.Model):
