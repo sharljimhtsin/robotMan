@@ -191,7 +191,8 @@ def sendCommentViaDB(comment, user, followerId):
         userid=user['id'],
         ip=0,
         createtime=get_local_datetime(),
-        modifytime=get_local_datetime()
+        modifytime=get_local_datetime(),
+        crccontent=crc32(str.encode(comment['content']))
     )
     updateObj = Comment.objects.get(pk=comment['id'])
     updateObj.lastTime = get_local_datetime()
