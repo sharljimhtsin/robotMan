@@ -13,6 +13,8 @@ from django.utils import timezone
 import pytz
 from bs4 import BeautifulSoup
 import logging
+import threading
+from . import scheduler
 
 logger = logging.getLogger('fileLog')
 
@@ -53,8 +55,19 @@ def doTest(request):
         print(model_to_dict(o))
         break
     '''
-    count = sum(int(randomBool(0.70)) for i in range(10000))
-    print(count)
+    jobs = scheduler.get_instance()
+    if jobs.running is False:
+        jobs.remove_all_jobs('default')
+        jobs.remove_jobstore('default')
+        jobs.start()
+
+    do_time = datetime.now() + timedelta(minutes=1)
+    jobs.add_job(randomBool, 'date', run_date=do_time, args=[1.00])
+    print(jobs.get_jobs())
+    # count = sum(int(randomBool(0.70)) for i in range(10000))
+    # print(count)
+    # timer = threading.Timer(5, randomBool, [1.00])
+    # timer.start()
     return HttpResponse('hahahah')
 
 
@@ -68,6 +81,7 @@ COMMENT_RATE = 2
 TRIGGER_RATE = 0.5
 SEX_RATE = 0.5
 TOPIC_OR_COMMENT_RATE = 0.5
+RUN_DELAY_MIN = 0
 HEADER_DATA = {'accesstoken': '', 'clientversion': '1.0', 'clientid': 'apitest', 'devicetype': '3'}
 
 
@@ -89,7 +103,7 @@ def getVariableByKey(key):
 
 
 def initVariable():
-    global HOST, TOPIC_RATE, COMMENT_RATE, TRIGGER_RATE, SEX_RATE, TOPIC_OR_COMMENT_RATE
+    global HOST, TOPIC_RATE, COMMENT_RATE, TRIGGER_RATE, SEX_RATE, TOPIC_OR_COMMENT_RATE, RUN_DELAY_MIN
     HOST = getVariableByKey('host') if getVariableByKey('host') is not None else HOST
     TOPIC_RATE = int(getVariableByKey('topic_rate')) if getVariableByKey('topic_rate') is not None else TOPIC_RATE
     COMMENT_RATE = int(getVariableByKey('comment_rate')) if getVariableByKey(
@@ -99,6 +113,8 @@ def initVariable():
     SEX_RATE = float(getVariableByKey('sex_rate')) if getVariableByKey('sex_rate') is not None else SEX_RATE
     TOPIC_OR_COMMENT_RATE = float(getVariableByKey('topic_or_comment_rate')) if getVariableByKey(
         'topic_or_comment_rate') is not None else TOPIC_OR_COMMENT_RATE
+    RUN_DELAY_MIN = int(getVariableByKey('run_delay_min')) if getVariableByKey(
+        'run_delay_min') is not None else RUN_DELAY_MIN
     return True
 
 
@@ -519,6 +535,31 @@ def skip_or_not(club_id):
     return True if len(maps) == 0 else False
 
 
+def run_topic_further(element, user, isTopic, clubId):
+    rawData = sendTopicViaDB(element, user)
+    if rawData is not None:
+        saveJob(rawData, isTopic, element, user, clubId, 1)
+    else:
+        logger.error("save topic error")
+
+
+def run_comment_further(element, user, isTopic, clubId, postId):
+    rawData = sendCommentViaDB(element, user, postId)
+    if rawData is not None:
+        saveJob(rawData, isTopic, element, user, clubId, 1)
+    else:
+        logger.error("save comment error")
+
+
+def init_or_get_scheduler():
+    jobs = scheduler.get_instance()
+    if jobs.running is False:
+        jobs.remove_all_jobs('default')
+        jobs.remove_jobstore('default')
+        jobs.start()
+    return jobs
+
+
 # trigger start here
 def start_fork_again(request):
     post = request.POST
@@ -557,17 +598,18 @@ def start_fork_again(request):
                 logger.error("topic error")
                 return HttpResponse('ERROR')
 
-            rawData = sendTopicViaDB(element, user)
-            if rawData is not None:
-                saveJob(rawData, isTopic, element, user, clubId, 1)
-            else:
-                logger.error("save topic error")
-                return HttpResponse('ERROR')
+            jobs = init_or_get_scheduler()
+            do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
+            jobs.add_job(run_topic_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId])
+            update_obj = Topic.objects.get(pk=element['id'])
+            update_obj.lastTime = get_local_datetime()
+            update_obj.save()
+
     else:
         for i in range(0, COMMENT_RATE):
             # prepare the fake data
             random.shuffle(mainList)
-            postId = mainList[0]['idInServer']
+            post_id = mainList[0]['idInServer']
             source_id = mainList[0]['contentId']
             element = pickElement(isTopic, source_id)
             print(element)
@@ -576,12 +618,12 @@ def start_fork_again(request):
                 logger.error("comment error")
                 return HttpResponse('ERROR')
 
-            rawData = sendCommentViaDB(element, user, postId)
-            if rawData is not None:
-                saveJob(rawData, isTopic, element, user, clubId, 1)
-            else:
-                logger.error("save comment error")
-                return HttpResponse('ERROR')
+            jobs = init_or_get_scheduler()
+            do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
+            jobs.add_job(run_comment_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId, post_id])
+            update_obj = Comment.objects.get(pk=element['id'])
+            update_obj.lastTime = get_local_datetime()
+            update_obj.save()
 
     update_obj = UserServer.objects.using('maimeng').get(pk=user['id'])
     update_obj.modifytime = get_local_datetime()
