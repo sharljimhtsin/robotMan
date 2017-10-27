@@ -10,7 +10,7 @@ executors = {
 }
 job_defaults = {
     'coalesce': False,
-    'max_instances': 3
+    'max_instances': 100
 }
 scheduler = None
 

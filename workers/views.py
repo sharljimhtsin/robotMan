@@ -15,6 +15,7 @@ from bs4 import BeautifulSoup
 import logging
 import threading
 from . import scheduler
+import uuid
 
 logger = logging.getLogger('fileLog')
 
@@ -244,7 +245,7 @@ def pick_user():
     ).order_by(
         'modifytime'
     )[:10]
-    print(user_list, sex)
+    print(user_list, sex, 'user_list & sex')
     user_list = querySetToDict(user_list)
     random.shuffle(user_list)
     user = None if len(user_list) == 0 else user_list[0]
@@ -539,16 +540,20 @@ def run_topic_further(element, user, isTopic, clubId):
     rawData = sendTopicViaDB(element, user)
     if rawData is not None:
         saveJob(rawData, isTopic, element, user, clubId, 1)
+        logger.debug('run_topic_further @ ' + get_local_datetime())
     else:
         logger.error("save topic error")
+    return True
 
 
 def run_comment_further(element, user, isTopic, clubId, postId):
     rawData = sendCommentViaDB(element, user, postId)
     if rawData is not None:
         saveJob(rawData, isTopic, element, user, clubId, 1)
+        logger.debug('run_comment_further @ ' + get_local_datetime())
     else:
         logger.error("save comment error")
+    return True
 
 
 def init_or_get_scheduler():
@@ -557,6 +562,7 @@ def init_or_get_scheduler():
         jobs.remove_all_jobs('default')
         jobs.remove_jobstore('default')
         jobs.start()
+    print(jobs.get_jobs())
     return jobs
 
 
@@ -587,7 +593,7 @@ def start_fork_again(request):
 
     # create new topic or give a comment
     isTopic, mainList = checkTopicOrNot(clubId)
-    print(isTopic, mainList)
+    print(isTopic, mainList, 'isTopic & mainList')
     # do the post
     if isTopic:
         for i in range(0, TOPIC_RATE):
@@ -600,7 +606,8 @@ def start_fork_again(request):
 
             jobs = init_or_get_scheduler()
             do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
-            jobs.add_job(run_topic_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId])
+            jobs.add_job(run_topic_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId],
+                         id=uuid.uuid1().__str__())
             update_obj = Topic.objects.get(pk=element['id'])
             update_obj.lastTime = get_local_datetime()
             update_obj.save()
@@ -612,15 +619,15 @@ def start_fork_again(request):
             post_id = mainList[0]['idInServer']
             source_id = mainList[0]['contentId']
             element = pickElement(isTopic, source_id)
-            print(element)
-            print(source_id)
+            print(element, source_id, 'element & source_id')
             if element is None:
                 logger.error("comment error")
                 return HttpResponse('ERROR')
 
             jobs = init_or_get_scheduler()
             do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
-            jobs.add_job(run_comment_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId, post_id])
+            jobs.add_job(run_comment_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId, post_id],
+                         id=uuid.uuid1().__str__())
             update_obj = Comment.objects.get(pk=element['id'])
             update_obj.lastTime = get_local_datetime()
             update_obj.save()
