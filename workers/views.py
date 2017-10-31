@@ -170,7 +170,7 @@ def sendTopicViaDB(topic, user):
         voteid=0,
         clubid=topic['clubId'],
         userid=user['id'],
-        isadmin=0,
+        isadmin=3,
         ip=0,
         offstatus=0,
         status=1,
