@@ -9,7 +9,6 @@ executors = {
     'default': ThreadPoolExecutor(20)
 }
 job_defaults = {
-    'coalesce': False,
     'max_instances': 100
 }
 scheduler = None

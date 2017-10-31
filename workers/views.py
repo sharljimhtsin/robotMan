@@ -606,6 +606,7 @@ def start_fork_again(request):
 
             jobs = init_or_get_scheduler()
             do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
+            print(do_time)
             jobs.add_job(run_topic_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId],
                          id=uuid.uuid1().__str__())
             update_obj = Topic.objects.get(pk=element['id'])
@@ -626,6 +627,7 @@ def start_fork_again(request):
 
             jobs = init_or_get_scheduler()
             do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
+            print(do_time)
             jobs.add_job(run_comment_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId, post_id],
                          id=uuid.uuid1().__str__())
             update_obj = Comment.objects.get(pk=element['id'])
