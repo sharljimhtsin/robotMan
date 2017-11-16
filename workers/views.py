@@ -156,7 +156,7 @@ def sendTopic(topic, headerData):
     return rawData
 
 
-def sendTopicViaDB(topic, user):
+def sendTopicViaDB(topic, user, createtime=get_local_datetime()):
     rawData = Posts.objects.using('maimeng').create(
         type=0,
         title=topic['title'],
@@ -175,7 +175,7 @@ def sendTopicViaDB(topic, user):
         offstatus=0,
         status=1,
         showtime=get_local_datetime(),
-        createtime=get_local_datetime(),
+        createtime=createtime,
         modifytime=get_local_datetime()
     )
     updateObj = Topic.objects.get(pk=topic['id'])
@@ -195,7 +195,7 @@ def sendComment(comment, headerData, followerId):
     return rawData
 
 
-def sendCommentViaDB(comment, user, followerId):
+def sendCommentViaDB(comment, user, followerId, createtime=get_local_datetime()):
     comment['postsId'] = followerId
     rawData = CommentServer.objects.using('maimeng').create(
         content=comment['content'],
@@ -207,7 +207,7 @@ def sendCommentViaDB(comment, user, followerId):
         viewtype=1,
         userid=user['id'],
         ip=0,
-        createtime=get_local_datetime(),
+        createtime=createtime,
         modifytime=get_local_datetime(),
         crccontent=crc32(str.encode(comment['content']))
     )
@@ -536,8 +536,8 @@ def skip_or_not(club_id):
     return True if len(maps) == 0 else False
 
 
-def run_topic_further(element, user, isTopic, clubId):
-    rawData = sendTopicViaDB(element, user)
+def run_topic_further(element, user, isTopic, clubId, create_time):
+    rawData = sendTopicViaDB(element, user, create_time)
     if rawData is not None:
         saveJob(rawData, isTopic, element, user, clubId, 1)
         logger.debug('run_topic_further @ ' + get_local_datetime())
@@ -546,8 +546,8 @@ def run_topic_further(element, user, isTopic, clubId):
     return True
 
 
-def run_comment_further(element, user, isTopic, clubId, postId):
-    rawData = sendCommentViaDB(element, user, postId)
+def run_comment_further(element, user, isTopic, clubId, postId, create_time):
+    rawData = sendCommentViaDB(element, user, postId, create_time)
     if rawData is not None:
         saveJob(rawData, isTopic, element, user, clubId, 1)
         logger.debug('run_comment_further @ ' + get_local_datetime())
@@ -564,6 +564,24 @@ def init_or_get_scheduler():
         jobs.start()
     print(jobs.get_jobs())
     return jobs
+
+
+def get_random_create_time():
+    # 随机数关系2：实时（+0）：未来1天（+1）：未来2天（+2）：未来3天（+3）=3：2：2：3
+    rate_map = [0.3, 0.2, 0.2, 0.3]
+    time_map = [0, 1, 2, 3]
+    i = random.random()
+    j = 0
+    k = -1
+    for rate in rate_map:
+        j += rate
+        k += 1
+        if j >= i:
+            break
+
+    days = time_map[k]
+    print(days, k)
+    return datetime.now() + timedelta(days=days)
 
 
 # trigger start here
@@ -605,9 +623,10 @@ def start_fork_again(request):
                 return HttpResponse('ERROR')
 
             jobs = init_or_get_scheduler()
-            do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
+            do_time = get_random_create_time()
             print(do_time)
-            jobs.add_job(run_topic_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId],
+            jobs.add_job(run_topic_further, 'date', run_date=do_time,
+                         args=[element, user, isTopic, clubId, get_local_datetime()],
                          id=uuid.uuid1().__str__())
             update_obj = Topic.objects.get(pk=element['id'])
             update_obj.lastTime = get_local_datetime()
@@ -626,9 +645,10 @@ def start_fork_again(request):
                 return HttpResponse('ERROR')
 
             jobs = init_or_get_scheduler()
-            do_time = datetime.now() + timedelta(minutes=RUN_DELAY_MIN)
+            do_time = get_random_create_time()
             print(do_time)
-            jobs.add_job(run_comment_further, 'date', run_date=do_time, args=[element, user, isTopic, clubId, post_id],
+            jobs.add_job(run_comment_further, 'date', run_date=do_time,
+                         args=[element, user, isTopic, clubId, post_id, get_local_datetime()],
                          id=uuid.uuid1().__str__())
             update_obj = Comment.objects.get(pk=element['id'])
             update_obj.lastTime = get_local_datetime()
